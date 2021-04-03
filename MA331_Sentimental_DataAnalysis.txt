@@ -1,0 +1,371 @@
+---
+title: "MA331_COURSEWORK ON SENTIMENTAL ANALYSIS"
+Registration Number: "2010655"
+date: "16/03/2021"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+Registration Number: '2010655'
+Email: sk20390@essex.ac.uk
+---
+
+# 1.INTRODUCTION
+#### The main objective of this paper is to carry out a sentimental analysis of two books from the Project Gutenberg collection. Project Gutenberg is a library of over 60,000 custom e-books. It is a voluntary initiative to digitalize and collect cultural works and to promote the creation and distribution of e-books. It was founded in 1971 by American writer Michael S Hart and is the oldest digital library. Most of the contents of his collection are full-text books in the public sector.
+ Sentiment analysis is an effective way to explore an author's feelings towards a subject. This paper aims to analyze two books, one from the child playlist and the other from the adult playlist from the Gutenberg Collection, and compare the overall emotions and sentiments throughout these works using String processing and Text Mining. I am taking the books "Alice’s Adventures in Wonderland" by Lewis Carroll from child list and "GREAT EXPECTATIONS" by Charles Dickens from the adult list as my case studies.
+ "Alice's Adventures in Wonderland" is a story about a little girl Alice who falls down a rabbit hole and delves into a fantasy world filled with wonderful people and animals with full of surprises. This is a children's classical book that is also appreciated by adults whereas "Great Expectations" tells us the story of an orphan boy who is adopted by a blacksmith's family, who has good luck and great expectations, and then loses both his luck and his expectations. However, he learns to find happiness in this phase and breakdown. He learns the importance of friendship and love and, of course, thrives and becomes a better person for it.
+ 
+
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
+#echo, message and warning are set to false to exclude printing of r codes,messages and warning to the output pdf file.
+#Installing the required packages
+install.packages("wordcloud")
+```
+
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE}
+#loading the required packages
+library(tidyverse) # data manipulation & plotting
+library(stringr)   # String manipulation
+library(tidytext)  # Additional text mining functions
+library(glue)      #for pasting strings
+library(readr)     #to provide a fast and friendly way to read rectangular data (like csv)
+library(data.table)#provides an enhanced version of data.frame
+library(tibble)    # provide awsome printing functions for dataframes
+library(dplyr)     #data manipulation and data wrangling
+library(gridExtra) #Provides a number of user-level functions to work with "grid" graphics
+
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Reading the child dataset "Alice’s Adventures in Wonderland" from github to R and assigning this dataset to a variable called child
+child <- read.csv("https://raw.githubusercontent.com/SudheenaMisra/R-programming/main/11_Alice's%20Adventures%20in%20Wonderland.csv")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Reading the adult dataset "Great Expectations" from github to R and assigning the name adults
+adult <-read.csv("https://raw.githubusercontent.com/SudheenaMisra/R-programming/main/1400_Great%20Expectations.csv")
+
+```
+
+
+# 2.Method
+
+## 2.1 Prelimainary Data Analysis
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+str(child) #to get the structure of the child data
+str(adult) #to get the structure of the adult data
+```
+#### To start my data analysis I have assigned the dataset ""Alice’s Adventures in Wonderland" to a variable called "child" and the dataset "Great Expectations" to a variable called "adult".
+When look at the structure of the data I found that the child dataset consist of 3380 observations(rows) and 2 variables(columns) and adult consist 20024 rows and 2 columns.The names of the variables(coulmns) of both datasets(child and adult) is found to be "gutenberg_id" and "text".
+
+#### For the convinience of text mining converting the dataframes to tibbles.Benifits of tibbles compared to data frames  are Tibbles have nice printing method that display only the first 10 rows and all the columns that fit on the screen. This is convenient when you work with large data sets. When printed, the data type of each column is specified.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#converting to tibbles
+child <- tibble(child)
+adult <- tibble(adult)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Making some modifications to the child dataset.
+##adding new columns book, auther and chapter and detecting each chapter in the book using regex pattern and grouping them accordingly.
+child <- child %>% mutate(Book ="Alice’s Adventures in Wonderland",
+         Author="Lewis Carroll",Chapter = 
+         cumsum(str_detect(text, regex("^CHAPTER [IVX.]+",ignore_case = TRUE)))) %>%                ungroup()
+#head(child) # get the first 6 rows
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#like child dataset, carryout similar modifications in adult dataset 
+##adding new columns book, auther and chapter and detecting each chapter in the book using regex pattern and grouping them accordingly.
+adult <-adult %>% mutate(Book="Great Expectations",Author="Charles Dickens",
+         Chapter= cumsum(str_detect(text, regex("^CHAPTER [IVX.]+",ignore_case =           TRUE)))) %>% ungroup()   
+
+#tail(adult) # get the last six rows
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#combining the 2 books by rows and asigning it to a variable called books
+books <- rbind(child,adult)
+
+```
+
+
+
+
+## 2.2 Tidytext format
+#### The first step in sentimental analysis is to convert the data source(here the 2 books) into a tidytext format which will allow as to carry out the analyse more easier. The structure of the tidytext format is defined as *each variable is treated as a column,each observation is treated as a row and each observational unit is considered as a table*
+### To work with this tidytext dataset we need to restructure it into a **one-token-per-column format**. *A token can be a word, character, subword, etc*.**Tokenization is a process of separating a piece of text into smaller units called tokens.**. In most cases tokenization is done based on white space that is splitting text by words(ie the default) and we can also do it in another ways also.Lets consider some examples of tokenization.
+##### consider the text "Why these lazy people come to Co-operative jobs"
+##### **word tokens :** Here splitting is based on words(or white space)
+##### "why"
+##### "these"
+##### "lazy"
+##### "people"
+##### "come"
+##### "Co-operative"
+##### "jobs"
+##### **subword tokens :** consider the word "Co-operative", here it splits based on subword
+##### "co"
+##### "operative"
+##### **Character tokens :** consider the word "No", the splitting is based on each chacter of the word. 
+##### "N"
+##### "o"
+
+#### Here I am going to do tokenization by words. In order to perform tokenization and transform the data into a tidy data structure that is one token per column format we can use the tidytext's unnest_token() function. This is really a usefull function which not only perform the tokenization but also perform operations such as removing punctuations and converting the tokens to lowercase so that we can easily compare or merge with other datasets.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#performing tokenization
+(book_tokens <-  books %>% unnest_tokens(word,text)) #here we are splitting in such a way that each row contain only one word, text is the name of the column in our dataset which contains the sentences of the book.
+
+#book token dataset holds both child and adult datasets in a tidy format(one token per column) afterwards this  dataset will be used for analysis.
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# set factor to keep books and author in order of their names and author name
+book_tokens$Book <- factor(book_tokens$Book, levels = c("Alice’s Adventures in Wonderland","Great Expectations")) #setting factor levels for book as name of the book
+book_tokens$Author <- factor(book_tokens$Author, levels =c("Lewis Carroll","Charles Dickens")) #setting factor levels for author as author's name accordingly
+
+```
+
+### 2.2.1 Removing stop words
+#### The next step is removing the stop words in the text. When analyse at the context of the text it can be seen that the dataset contains so many stop words such as "the", "as", "and","of","to" etc. these words are useless for our sentimental analysys so we can remove these words using tidytext anti_join() function.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data("stop_words") #loading stop words dataset kept in tidytext package
+book_tokens <- book_tokens %>% anti_join(stop_words) #removing stop words an saving the changes to book_tokens
+
+
+```
+
+### 2.2.2 Counting the most common words 
+#### In order to count the most common words in the books we can use dplyr's count() function 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+count_words <- book_tokens %>% count(word,sort = TRUE) #counting the most common words
+count_words
+
+```
+## 2.3 The sentiment dataset
+#### There are a diversity of methods and dictionaries that are available for assessing the view or emotion in text. The tidytext package offers access to numerous sentiment lexicons. Three general-purpose lexicons are as follows
+#### **a)AFINN from Finn Årup Nielsen:**The AFINN lexicon allocates words with a score that turns between -5 and 5, with negative scores representing negative sentiment and positive scores representing positive sentiment.
+#### **b)bing from Bing Liu and collaborators:**This lexicon classifies words in a binary fashion into positive and negative categories. 
+#### **c)nrc from Saif Mohammad and Peter Turney:**This lexicon classifies words in a binary manner (“yes”/“no”) into categories of positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sentiments
+
+```
+
+#### All of these three lexicons are grounded on unigrams (single words). These lexicons comprise numerous English words  that describes emotions like joy, anger, sadness, and so on, and each word has a specific score based on positive or negative sentiment.
+
+#### Now lets use the nrc sentiment dataset to measure the different sentiments that are embodied across the books. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# we are using right join which returns all the rows from "nrc" lexigons and any rows with matching keys from the book_tokens then we are filtering the rows that are not na values and counting the sentiments in order.  
+book_tokens %>% right_join(get_sentiments("nrc")) %>%
+   filter(!is.na(sentiment)) %>% count(sentiment, sort =TRUE)
+```
+#### The above table gives an overall idea about the sentiments throughout the 2 books.Now our aim is to analyse the sentiments seperately among each chapter of each book as the story progressess.In order to achieve this creating an index that splits each books by 600 words, this is an approximate count of words on every two pages so this will allow us to evaluate deviations in sentiments even within chapters. Then inputting “bing” lexicon to inner_join() function to access the positive vs. negative sentiment of each word. Then counting the positive and negative words in every two pages. We then use spread() so that we get negative and positive sentiment in separate columns, and finally calculate a net sentiment (positive - negative) and plotting with the help of ggplot.
+
+# Results
+## 3.1 Comparing the two books
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+book_tokens %>% group_by(Book) %>%
+    mutate(word_count = 1:n(),index=word_count %/% 600+1) %>% #creating index that splits the book by 600 words(it is the approximate count of words on every 2 pages)
+    inner_join(get_sentiments("bing")) %>% # return sentiments commmon in both bing and book_tokens
+    count(Book, index=index, sentiment) %>% ungroup() %>% #counting the +ve & -ve words in every 600 pages and grouping them seperately.
+    spread(sentiment, n, fill=0) %>% #spreading the +ve and -ve sentiments to seperate coulmns
+    mutate(sentiment = positive - negative, Book= factor(Book, #adding two columns sentiment and book  and labelling the levels of book for plotting seperately
+    levels =c("Alice’s Adventures in Wonderland","Great Expectations"))) %>%
+    ggplot(aes(index, sentiment, fill=Book))+  
+    geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE)+
+    facet_wrap(~Book, ncol = 2, scales = "free_x") #plotting index vs. sentiments
+   
+
+```
+
+####  The plot shows how  each book vagaries towards more positive or negative sentiment over the trajectory of the story.
+
+
+## 3.2 Comparing Sentiments
+#### Through numerous options for sentiment lexicons, we might need some more information on which one is proper for our purposes. Let’s analyse all three sentiment lexicons and observe how the sentiment changes across the books.AFINN lexicon estimates sentiment with a numeric score between -5 and 5, while the other two lexicons classifies words in a binary fashion, either positive or negative. So we need to create a seperate pattern for AFINN and one or bing and nrc.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+afinn <- book_tokens %>% group_by(Book) %>% #grouping by books
+            mutate(word_count = 1:n(),
+                   index = word_count %/% 600 + 1) %>% #creating index column for evry 2 pages 
+            inner_join(get_sentiments("afinn")) %>% # joining sentiments common in affinn with book_tokens
+            group_by(Book, index) %>% # grouping by book and index
+            summarise(sentiment = sum(value)) %>% #summarizing sentiments
+            mutate(method = "AFINN") # creating a column method for afinn
+
+bing_and_nrc <- bind_rows(book_tokens %>%
+                  group_by(Book) %>% 
+                  mutate(word_count = 1:n(),
+                         index = word_count %/% 600 + 1) %>% # untill this line repeating the steps above
+                  inner_join(get_sentiments("bing")) %>% #joining sentiments common in bing with book_tokens
+                  mutate(method = "Bing"), # Creating a column method for bing
+      book_tokens %>%
+                  group_by(Book) %>% 
+                  mutate(word_count = 1:n(),
+                         index = word_count %/% 600 + 1) %>%
+                  inner_join(get_sentiments("nrc") %>% # joining sentiments common in nrc with book_tokens
+                  filter(sentiment %in% c("positive", "negative"))) %>% #filtering +ve and -ve sentiments in sentiment datset
+                  mutate(method = "NRC")) %>% # Creating a column method for nrc
+        count(Book, method, index = index , sentiment) %>% #taking counts of the column book,method, index and sentiment
+        ungroup() %>% # ungruping accordingly
+        spread(sentiment, n, fill = 0) %>% ##spreading the +ve and -ve sentiments to seperate coulmns
+        mutate(sentiment = positive - negative) %>% # adding a sentiment column from +ve to -ve
+        select(Book, index, method, sentiment) #selecting the columns Book, inedex,method and sentiment
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Analysing the sentiments of AFINN, NRC and BING throughtout the 2 books
+bind_rows(afinn, 
+          bing_and_nrc) %>% ##combining 3 lexicons by row
+  ggplot(aes(index, sentiment, fill = method)) + # plotting for each lexicons 
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+#### The three different lexicons for conniving sentiment bounce results that are diverse in an absolute sense but have similar relative trajectories through the books.It has been noted that the afinn and bing lexigons are shifted to gives the largest absolute values, with high negative values throughout the books.The NRC results are shifted higher relative to the other two, labeling the text more positively, but detects similar relative changes in the text. Now lets look into the variations of these lexigons seperately in each book.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,fig.width = 8,fig.height =6}
+#Analysing the sentiments of AFINN, NRC and BING throughtout the 2 books seperately
+bind_rows(afinn, 
+          bing_and_nrc) %>% #combining 3 lexicons by row
+        ungroup() %>%
+        mutate(Book = factor(Book, levels = c("Alice’s Adventures in Wonderland","Great Expectations"))) %>% # grouping seperatley based on book names
+  ggplot(aes(index, sentiment, fill = method)) +  #plotting using ggplot and adding some colors to x and y axis labels.
+  geom_bar(alpha = 0.8, stat = "identity", show.legend = FALSE) +
+  facet_grid(Book ~ method)+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+```
+#### From this it is clear that the lexicons afinn and bing shows a negative shift throughout the book  "Alice’s Adventures in Wonderland" whereas the nrc lexigons shifted more positive.
+#### But for "Great Expectations" there is a huge difference in shifts for all the 3 lexigons.The ratio of positive to negative words in afinn is high compared to other two and is shifted more to negative.Bing also shifted more to negative whereas the nrc lexicon is shifted to more positive.
+
+
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE}
+bing_count_sentiments <- book_tokens %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_count_sentiments 
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#plotting top 15 bing sentiment words in the books
+bing_count_sentiments  %>%
+        group_by(sentiment) %>%
+        top_n(15) %>%
+        ggplot(aes(reorder(word, n), n, fill = sentiment)) +
+          geom_bar(alpha = 0.8, stat = "identity", show.legend = FALSE) +
+          facet_wrap(~sentiment, scales = "free_y") +
+          labs(y = "Influence to sentiment", x = NULL) +
+          coord_flip()
+```
+#### Bing lexicon treats the word "miss" more negatively and is appearing more throughot the books.
+
+
+### Wordcloud of the book "Alice’s Adventures in Wonderland"
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#displaying wordcloud of "Alice’s Adventures in Wonderland" with 100 words
+library(wordcloud)
+
+book_tokens %>% filter(Book == "Alice’s Adventures in Wonderland") %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words =100 ))
+```
+### Wordcloud of the book "Alice’s Adventures in Wonderland"
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#displaying wordcloud of "Great Expectations" with 100 words
+book_tokens %>% filter(Book == "Great Expectations") %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words =100 ))
+```
+
+### Overall positive and negative words within 2 books
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(reshape2)
+#Overall positive and negative words within 2 books of 100 words
+book_tokens %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+
+
+#### Lets create 2 two tables in which one contain the list of negative words andthe other contain list positive words from the Bing lexicon which are present in each book and calculate percentage of negative/positive words per each chapter. The table only shows the top one chapter in each book contain more percentage of positive or negative words.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bing_negative <- get_sentiments("bing") %>%  
+  filter(sentiment == "negative") #from bing filtering -ve sentiments
+
+wordcounts <- book_tokens %>%
+  group_by(Book, Chapter) %>%  # grouping with respect to Book and chapter
+  summarize(words = n()) #Summarising the total word count in the chapter
+
+book_tokens %>%
+  semi_join(bing_negative) %>% # returns the rows of the book_tokens where it can find a match in the bing_negative
+  group_by(Book, Chapter) %>%  # grouping with respect to Book and chapter
+  summarize(Negative_words = n()) %>% #Summarising the total -ve word count in the chapter
+  left_join(wordcounts, by = c("Book", "Chapter")) %>% #return -ve words common in wordcount, Book and chapter.
+  mutate(percentage = Negative_words/words*100) %>% #calculating percentage of -ve words
+  filter(Chapter != 0) %>% #Excluding the text outside of chapters
+  top_n(c(1)) %>% # taking the top one chapter for -ve sentiment
+  ungroup() #ungrouping
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bing_positive <- get_sentiments("bing") %>% 
+  filter(sentiment == "positive") #from bing filtering positive sentiments
+
+wordcounts <- book_tokens %>%
+  group_by(Book, Chapter) %>% # grouping with respect to Book and chapter
+  summarize(words = n()) #Summarising the total word count in the chapter
+
+book_tokens %>%
+  semi_join(bing_positive) %>% # returns the rows of the book_tokens where it can find a match in the bing_positive
+  group_by(Book, Chapter) %>% # grouping with respect to Book and chapter
+  summarize(Positive_words = n()) %>% #Summarising the total +ve word count in the chapter
+  left_join(wordcounts, by = c("Book", "Chapter")) %>% #return +ve words common in wordcount, Book and chapter.
+  mutate(percentage = Positive_words/words*100) %>% #calculating percentage of positive words
+  filter(Chapter != 0) %>% #Excluding the text outside of chapters
+  top_n(c(1)) %>% # taking the top one chapter for positive sentiment
+  ungroup() #ungrouping
+
+```
+# Discussion
+#### Sentiment analysis offers a method to realize the attitudes and feelings spoken in texts. we explored how to tactic sentiment analysis by means of tidy data principles. We can effectively convey an Author’s emotions in text using lexicons but the main challenge is different lexicons shows some kind of variations for the same text. For example if some words are treated as negative in one lexicon the same word may be treated as positive by other lexicons. But overall it shows same shifts throughout the trajectory of the book.
+
+# References
+### Google: (https://www.tidytextmining.com/sentiment.html)
+### Kaggle: (https://www.kaggle.com/rtatman/tutorial-sentiment-analysis-in-r)
+### GitHub: (https://github.com/bradleyboehmke/Text-Mining-Tutorials/blob/master/02-sentiment.md)
+
