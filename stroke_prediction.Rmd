@@ -1,0 +1,382 @@
+---
+title: "Stroke Prediction"
+author: "Comp"
+date: "18/03/2021"
+output: html_document
+---
+
+
+```{r include=FALSE}
+library(RColorBrewer)
+library(neuralnet)
+library(nnet)
+library(corrplot)
+library(dplyr)
+library(glmnet)
+library(mlbench)
+library(caret)
+library(Hmisc)
+library(rpart)
+library(rpart.plot)
+library(e1071)
+library (ridge)
+library(MLmetrics)
+library(ggplot2)
+library(caret)
+library(tidyr)
+library(gridExtra)
+library(caTools) 
+library(class) 
+library(randomForest)
+library(gridExtra)
+```
+
+## <font size="6">Analysis of Heart Attack (Stroke)</font>
+
+### <font size="5">1. Introduction</font>
+
+<font size="4">Heart disease is one of the most critical and widespread diseases in the world. The survey says that 1/4 of the people in the United States of America died because of heart attack. In most cases, Stroke is the ultimate conclusion of the heart disease which take the life away and out the person dead. Heart Disease generally lead the patients toward stroke which causes the sudden and predicted death of the patient by giving no time to the patient. As Stroke is the ultimate conclusion of the heart disease, this need to be detected at the early stage so that it can be avoided. Many symptoms are correlated to heart attack or heart disease or ultimately the stroke and thus, those symptoms need to be understood and emphasized to predict the possibility of the heart attack because of stroke.</font>
+
+### <font size="5">2. Factors that accelerate Heart Attack</font>
+
+<font size="4">Heart attack can be seen for different reasons. All those reasons can be seen as symptoms in the human body but not all of those are realized well. Some of the important facts that accelerate the possibility of heart attack or stroke are as follows:</font>
+
+	1. High Blood Pressure and Hypertension
+	2. High Cholesterol
+	3. Any type of Heart Disease
+	4. Diabetes
+	5. High Glucose Level (Sugar)
+	6. Elevated count of RBC
+	7. Headache
+	8. Previous occurrence of mild or major stroke
+	9. Seizure Disorder
+
+<font size="4">  The patients who have a high blood cholesterol, high blood pressure, any kind of heart disease, diabetes, sleep apnea, elevated count of RBC, Anemia, Migraines or periodic headaches, Seizure Disorder or stroke that had been occurred previously are highly prone to be further attacked by a next stroke. All those symptoms are generally comes in the body mainly because of the lifestyle and the food factor. The cholesterol level is seen to be higher for those who consumes more alcohol and does not take any kind of exercise. Thus alcohol has no direct effect on heart disease but it effect the increase of cholesterol in body which directly affects the heart attack. Another fact for the increase in the level of cholesterol is the smoking and consumption of much oily food. Those people generally takes higher amount of oily food in a day (like fast food) who are busy all through the day. So, the type of job or the type of business is also related the possibility of strokes passively. </font>
+
+### <font size="5">3. Aim and Objective</font>
+
+<font size="4">The analysis aims to predict the possibility of a stroke based on the collected data. So, primarily, the data will be collected to perform the prediction along with the analysis to understand the importance of the features of the data. The prediction of stroke will facilitate the patient to predict the possibility of stroke at the early stage and based on the predicted value, they can check for their daily routines and food habits. To fulfill the aims, the following objectives have been taken into consideration:</font>
+
+	1. to collect the data that contains the instances of stroke of the patients regarding to the symptoms that have been recorded.
+	2. To analyze the data concerning the symptoms of that disease.
+	3. To detect the data cleanliness and preprocess the data for further analysis.
+	4. To select the machine learning classifiers to classify the stroke possibilities.
+	5. To select the feathers that have the higher effect on having a stroke.
+	6. To split the data into train and test.
+	7. To train the machine learning classifier and test it using the test data.
+	8. To classify the stoke possibility and record the classification efficiency.
+
+
+### <font size="5">4. Data Collection</font>
+
+<font size="4">The aim and objectives have been discussed in the last section. To fulfill the aim and objectives, the data has been collected. This data contains the observation of 5110 patients on whom the test has been run and the symptoms have been recorded. This data contains 11 features including the feature called stroke. This stroke feature will be taken as the target attribute later at the time of classification of stoke. So, at present, the data contains 10 predictor features and 1 target feature. The features of data are shown below:
+
+```{r echo=FALSE}
+data<-read.csv("healthcare-dataset-stroke-data.csv")
+data<-na.omit(data)
+bmi<-data$bmi
+temp<-c()
+for (i in bmi){
+  if (i=="N/A"){
+    temp<-c(temp,0)
+  }else{
+    temp<-c(temp,i)
+  }
+}
+strk<-data$stroke
+data<-data[,c(2:9,11)]
+data$bmi<-temp
+heart<-data
+data$bmi<-as.numeric(data$bmi)
+data$stroke<-strk
+print("Collected data has the following features: ")
+for (i in 1:length(names(data))){
+  print(paste("Feature-",i," ------> ",names(data)[i]))
+}
+```
+
+### <font size="5">5. Data Analysis</font>
+
+<font size="4">In this section, the data analysis will be done concerning the features of the data to check for the effect and influences of those features on the possibility of having a stroke. </font>
+
+#### <font size="4.5">5.1. Possibility of Stroke by Gebnder</font>
+
+<font size="4">Primarily, the analysis has been done for the possibility of strokes concerning gender. In this data, the records contains the medication and symptoms both for Male and Female. among them, some have been affected with the heart disease and detected for the possibility of stroke and some are not. The below analysis will show comparative counts of the stroke possibility between Female and Male. The analysis is shown below:</font>
+
+```{r echo=FALSE,fig.width = 15,fig.height =5}
+tb1<-table(data$gender, data$stroke)
+dft1<-as.data.frame(tb1)
+names(dft1)<-c("Gender","Stroke","Count")
+dft2<-dft1[c(4,5),]
+g1<-ggplot(data=dft2, aes(x=Stroke, y=Count, fill=Gender)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  geom_text(aes(label=Count), vjust=1.5, color="white",position = position_dodge(1), size=4)+
+  theme_minimal()+labs(x="Gender", y= "Occurance", title="Stroke by Gender")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+dft3<-dft1[c(1,2),]
+g2<-ggplot(data=dft3, aes(x=Stroke, y=Count, fill=Gender)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  geom_text(aes(label=Count), vjust=1.5, color="white",position = position_dodge(1), size=4)+
+  theme_minimal()+labs(x="Gender", y= "Occurance)", title="No Stroke by Gender")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+grid.arrange(g1, g2, ncol = 2,nrow = 1)
+```
+
+<font size="4"> From this analysis, it can be seen that, as per the view of data, Female are highly sensitive to be attacked by a stroke. On the other hand, the highest number of female have also be detected with the negative result of the possibility of stroke.</font>
+
+#### <font size="4.5">5.2. Possibility of Stroke by Age</font>
+
+<font size="4">Age is an important fact for which people generally is affected with certain disease. Keeping the fact in mind, the age has been analyzed with respect to the possibility of stroke. The analysis is shown below:</font>
+
+```{r echo=FALSE,fig.width = 18,fig.height =5}
+d1<-subset(data,stroke==1)
+d0<-subset(data,stroke==0)
+data1<-data
+data1$stroke<-as.character(data1$stroke)
+g1<-ggplot(data1, aes(stroke, age)) + 
+  geom_boxplot(aes(fill = stroke)) +
+  theme_minimal() +
+  theme(legend.position = "top")+
+  theme_minimal()+labs(x="Stroker", y= "Age", title="Stroke by Age")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+
+g2<-ggplot(data=d1, aes(age)) + 
+  geom_histogram(breaks=seq(20, 50, by=2), 
+                 col="red", 
+                 aes(fill=..count..)) +
+  scale_fill_gradient("Count", low="green", high="red")+theme(legend.position = "top")+
+  theme_minimal()+labs(x="Age", y= "Count", title="Distribution of age for patients with Stroke")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+g3<-ggplot(data=d0, aes(age)) + 
+  geom_histogram(breaks=seq(20, 50, by=2), 
+                 col="red", 
+                 aes(fill=..count..)) +
+  scale_fill_gradient("Count", low="green", high="red")+
+  theme_minimal()+labs(x="Age", y= "Count", title="Distribution of age for patients with No Stroke")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+grid.arrange(g2,g1,g3, ncol = 3,nrow = 1)
+```
+
+<font size="4">From this analysis, it is evident that if the age will be above 60 years, the possibility of stroke will be increased. below that age, there is a less risk in the stroke. </font>
+
+
+#### <font size="4.5">5.3. Possibility of Stroke by Heart Disease</font>
+
+<font size="4">As discussed earlier, heart disease may be a factor that influences the stroke possibility. So, to check the effect of heart disease for having a stroke, the analysis has been done concerning heart disease and stroke. The analysis is shown below:</font>
+
+```{r echo=FALSE,fig.width = 15,fig.height =5}
+tb1<-table(data$heart_disease, data$stroke)
+dft1<-as.data.frame(tb1)
+names(dft1)<-c("Heart_Disease","Stroke","Count")
+dft2<-dft1[c(3,4),]
+g1<-ggplot(data=dft2, aes(x=Stroke, y=Count, fill=Heart_Disease)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  geom_text(aes(label=Count), vjust=1.5, color="white",position = position_dodge(1), size=5)+
+  theme_minimal()+labs(x="Heart Disease", y= "Occurance", title="Stroke by Heart Disease")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+dft3<-dft1[c(1,2),]
+g2<-ggplot(data=dft3, aes(x=Stroke, y=Count, fill=Heart_Disease)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  geom_text(aes(label=Count), vjust=1.5, color="white",position = position_dodge(1), size=5)+
+  theme_minimal()+labs(x="Heart Disease", y= "Occurance", title="No stroke by Heart Disease")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+grid.arrange(g1, g2, ncol = 2,nrow = 1)
+```
+
+<font size="4"> From the analysis, it can be said that the heart disease had merely effects the possibility of stroke. So, this may not be an influencing factor on stroke concerning to this data. </font>
+
+#### <font size="4.5">5.4. Possibility of Stroke by Work type</font>
+
+<font size="4"> As discussed earlier, the consumption of oily food increases the level of cholesterol which influences the tendency of stroke. As one of the most busiest people work in the private sector, the analysis has been done to detect the relationship and effect of work type with possibility or tendency of stroke. The analysis is shown below:</font>
+
+```{r echo=FALSE,fig.width = 15,fig.height =5}
+tb1<-table(data$work_type, data$stroke)
+dft1<-as.data.frame(tb1)
+names(dft1)<-c("Work_Type","Stroke","Count")
+dft2<-dft1[c(1:5),]
+g1<-ggplot(data=dft2, aes(x=Stroke, y=Count, fill=Work_Type)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  coord_polar("y")+
+  geom_text(aes(label=Count), vjust=1.5, color="black",position = position_dodge(1), size=4)+
+  theme_minimal()+labs(x="Work Type", y= "Occurance", title="Stroke by Work Type")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+dft3<-dft1[c(6:10),]
+g2<-ggplot(data=dft3, aes(x=Stroke, y=Count, fill=Work_Type)) +
+  geom_bar(stat="identity",position=position_dodge())+coord_polar("y")+
+  geom_text(aes(label=Count), vjust=1.5, color="black",position = position_dodge(1), size=4)+
+  theme_minimal()+labs(x="Work Type", y= "Occurance", title="No stroke by Work Type")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+grid.arrange(g1, g2, ncol = 2,nrow = 1)
+```
+
+<font size="4"> From this analysis, it can be observed that, in most cases, the people from the Private sector are highly prone to the effect of heart attack or stroke. The lowest effect has been seen in the children.</font>
+
+#### <font size="4.5">5.5. Possibility of Stroke by Residance Type</font>
+
+<font size="4"> The place of living has the influence on the human health due to the food and living habits. In the urban places, the rich and delicious foods are available mostly and those are consumed by most of the people living and working there. So, this analysis, that is shown below defines the relationship between the possibility of stroke and the residence type.</font>
+
+```{r echo=FALSE,fig.width = 15,fig.height =5}
+tb1<-table(data$Residence_type, data$stroke)
+dft1<-as.data.frame(tb1)
+names(dft1)<-c("Residence","Stroke","Count")
+dft2<-dft1[c(1,2),]
+g1<-ggplot(data=dft2, aes(x=Stroke, y=Count, fill=Residence)) +
+  geom_bar(stat="identity",position=position_dodge())+coord_polar("y")+
+  geom_text(aes(label=Count), vjust=1.5, color="black",position = position_dodge(1), size=5)+
+  theme_minimal()+labs(x="Residence", y= "Occurance", title="Stroke by Residence Type")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+dft3<-dft1[c(3,4),]
+g2<-ggplot(data=dft3, aes(x=Stroke, y=Count, fill=Residence)) +
+  geom_bar(stat="identity",position=position_dodge())+coord_polar("y")+
+  geom_text(aes(label=Count), vjust=1.5, color="black",position = position_dodge(1), size=5)+
+  theme_minimal()+labs(x="Residence", y= "Occurance", title="No stroke by Work Residence Type")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+grid.arrange(g1, g2, ncol = 2,nrow = 1)
+```
+
+<font size="4"> From this analysis, it is clear that, most of the possibility of heart attacks have been seen in the people from urban place. </font>
+
+#### <font size="4.5">5.6. Possibility of Stroke by Smoking Status</font>
+
+<font size="4"> smoking is injurious to heath and it affects the heath in multifarious ways. Thus, the effect of smokimng will be judges for teh possibility of having a stroke. The analysis is shown below:</font>
+
+```{r echo=FALSE,fig.width = 15,fig.height =5}
+tb1<-table(data$smoking_status, data$stroke)
+dft1<-as.data.frame(tb1)
+names(dft1)<-c("Smoking","Stroke","Count")
+ggplot(data=dft1, aes(x=Stroke, y=Count, fill=Smoking)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  geom_text(aes(label=Count), vjust=1.5, color="white",position = position_dodge(1), size=5)+
+  theme_minimal()+labs(x="Smoking", y= "Occurance", title="Possibility of Stroke by Smoking")+
+  theme(
+plot.title = element_text(color="#6495ED", size=15, face="bold"),
+axis.title.x = element_text(color="#DE3163", size=12, face="bold"),
+axis.title.y = element_text(color="#DE3163", size=12, face="bold")
+)
+
+```
+
+<font size="4"> From this analysis, it can be seen that, for those observed patients, smoking had no significant effect on the possibility of heart attack or stroke.</font>
+
+### <font size="5">6. Stroke prediction</font>
+
+<font size="4"> After analyzing the data, the prediction of stroke will be done in thsi section. It will employ the machine learning classifier which will classify the possibility of stroke based on the chosen predictor. In this context, Decision Tree Classifier and Neural Networm classifier will be used to classify the stroke possibility.</font>
+
+### <font size="4.5">6.1 Feature Selection</font>
+
+<font size="4">In this section, first, the important features have been chosen which will be used as the final predictor. This process helps to select those features as the predictors only that have be the significant influences on the stroke. The selected features are as follows:
+
+```{r echo=FALSE,fig.width =12,fig.height =5}
+heart$gender<-as.numeric(as.factor(heart$gender))
+heart$ever_married<-as.numeric(as.factor(heart$ever_married))
+heart$work_type<-as.numeric(as.factor(heart$work_type))
+heart$Residence_type<-as.numeric(as.factor(heart$Residence_type))
+heart$smoking_status<-as.numeric(as.factor(heart$smoking_status))
+heart$bmi<-as.numeric(heart$bmi)
+heart$stroke<-as.numeric(data$stroke)
+corfet<-cor(heart)
+write.csv(corfet,"cor_stroke.csv")
+corrplot(corfet, method="color")
+crdf<-as.data.frame(corfet)
+cr<-crdf$stroke
+cordata<-data.frame(Feature=names(crdf),Cor=cr)
+cordata<-cordata[c(1:8),]
+cordata <- cordata %>%
+  arrange(desc(Feature)) %>%
+  mutate(lab.ypos = cumsum(Cor) - 0.5*Cor)
+ggplot(cordata, aes(x = "", y = Cor, fill = Feature)) +
+  geom_bar(width = 1, stat = "identity", color = "white") +
+  coord_polar("y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = Cor), color = "white")+
+  theme_void()
+
+```
+
+<font size="4"> As seen from the analysis of correlation, some features like gender are not correlated with stroke. So, these types of features can be omitted from the list and the rest can be considered to be the finally selected predictors. </font>
+
+### <font size="4.5">6.2 Data Split</font>
+
+<font size="4"> After selecting the predictors, the data has been split to 80:20 ratio which means , the train set will contain 80% of data and the rest data will go to the test set. This train set will be used to train the classifiers and using the test set, the model will be trained to get the accuracy of classification.</font>
+
+```{r echo=FALSE}
+heart$stroke<-as.factor(heart$stroke)
+heart<-heart[,c(2:6,8:11)]
+sample_size = floor(0.8*nrow(heart))
+train_ind = sample(seq_len(nrow(heart)),size = sample_size) 
+train =heart[train_ind,]
+test = heart[-train_ind,]
+```
+
+### <font size="4.5">6.3 Classification</font>
+
+<font size="4"> Finally, the classification will be done using Decision Tree Classifier and Neural Network Classifier. Primarily, the classification has been done using Decision Tree Classifier and the accuracy is shown below:</font>
+
+```{r echo=FALSE}
+dtmodel <- rpart(stroke~., data = train, method='class')
+ 
+pred_dt<-predict(dtmodel, test, type = 'class')
+print("----------------Confusion Matrix------------------")
+conf_dt<-table(pred_dt,test$stroke)
+conf_dt
+acc_dt<-sum(diag(conf_dt)) / sum(conf_dt)
+paste("Accuracy of Decision Tree:",round(acc_dt,3)*100)
+```
+<font size="4"> So, from the outcome, it can be seen that, Decision Tree Classifier is producing 95.3% accuracy to classify the stroke possibility based on the chosen predictors or features or symptoms. Now, the data will be classified using Neural Network Classifier and the outcome of the classification is shown below:</font>
+
+```{r echo=FALSE}
+model <- nnet::multinom(stroke ~., data = train)
+pred_mlr <- model %>% predict(test)
+conf_mlr<-table(test$stroke,pred_mlr)
+conf_mlr
+paste("Accuracy of Neural Network: ",round(mean(pred_mlr == test$stroke),3)*100,"%")
+```
+<font size="4"> So, from the outcome, it can be seen that, Neural Network Classifier is producing 95.2% accuracy to classify the stroke possibility based on the chosen predictors or features or symptoms.</font>
+
+### <font size="5">7. Discussion and Conclusion</font>
+
+The prediction of the heart attack or stroke has been done in this paper using the data that has bene collected for this purpose. So, first the data analysis has been done based on the features. After that, the machine learning classifiers have been applied to detect the possibility stroke. In this analysis, the infliuencial features have been emphasized and discussed. Finally, at the time of classification, it has been seen that, Decision Tree Classifier is production the best accuracy to predict the heart attack or stroke. 
+
