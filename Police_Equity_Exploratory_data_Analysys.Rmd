@@ -1,0 +1,314 @@
+---
+title: "MA304 CourseWork 3"
+author: '2010655'
+Email: sk20390@essex.ac.uk
+output: pdf_document
+---
+
+```{r message=FALSE,warning=FALSE,echo=FALSE }
+knitr::opts_chunk$set(fig.width=8, fig.height=5) 
+```
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE }
+#Installing required packages
+require(dsEssex)
+```
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+#Loading the packages
+library(ggplot2)
+library(gridExtra)
+library(stringr)
+library(reshape2)
+library(RColorBrewer)
+library(plotly)
+library(summarytools)
+library(lubridate)
+library(datetime)
+library(Hmisc)
+
+```
+
+
+# Exploratory Data Analysis on Police Equity
+
+```{r echo=FALSE}
+#Reading data from github and assigning to the name "police"
+police <- read.csv("https://raw.githubusercontent.com/SudheenaMisra/R-programming/main/Police%20Equity.csv", header = TRUE, colClasses="factor")
+```
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+#str(police)
+
+```
+
+# Summary
+### <font size="5">Identifying the role of race, ethnicity, gender and age in the decision-making process of police department is a complex task and determining the reasons behind their major actions is even more complex. For example, a police officer may decide to detain and interrogate or search for a black citizen, but may not decide to interrogate white citizens and create racial inequality. According to reaserch it has been reported that there exist a dicsrimination towards minor communities or people from a specific race, ethinic while the laws has been </font>
+
+
+#  Introduction
+### The main objective of this paper is to explore the data collected accross the various incidents reported againist the police Equity. The data explains about the various incidents happened accross various districts, beats and sector about the police decision making towards the subjects belonging to different ethnic group such as American Ind, Asian Black,Hispanic,White etc. This paper aims to investigate the whether the police force is effective in handling their duties or whether they misuse their power on common people or a specific group based on their gender, race or ethnicity while enforcing the law.</font>
+
+# Methods
+## Preliminary data analysis
+### Lets have a look at the dataset and explore the rows, and variables and their distribution.
+```{r message=FALSE,warning=FALSE}
+attach(police) # attaching data to the work space
+dim(police) # getting the number of rows and columns
+```
+### The data describes about 2384 incidents with available informations on 47 variables(columns) reported in various districts, divisions and beats.Lets have a look at the first 6 rows of the data 
+
+```{r message=FALSE,warning=FALSE}
+#getting first 6 rows of the data
+head(police)
+```
+
+### Lets explore the names of the variables in this dataset
+```{r message=FALSE,warning=FALSE}
+#let's starts exploring the variables
+for(i in 1:length(names(police))){
+  cat(i,"\b)",names(police)[i],", ")
+}
+
+```
+### Here when I look at the data I found that some of the variables are in wrong format.
+
+```{r message=FALSE, warning=FALSE}
+for(i in 1:length(colnames(police))){
+  cat(class(colnames(police)[i]),"\b, ")
+}
+```
+### Here we can see that all variables are marked as a charactor datatype.But we can understand from data that the "INCIDENT_DATE","OFFICER_HIRE_DATE","INCIDENT_TIME" are in date time datatype and "OFFICER_YEARS_ON_FORCE" is numeric. So we can convert this into its actual datatype.
+
+
+<!-- ```{r} -->
+<!-- library(lubridate) -->
+<!-- #converting all the mismarked variable types to this original datatype -->
+<!-- police$INCIDENT_DATE <- as.Date(paste(police$INCIDENT_DATE)) -->
+<!-- police$INCIDENT_TIME <- as.Date(paste(police$OFFICER_HIRE_DATE)) -->
+<!-- police$OFFICER_YEARS_ON_FORCE <- as.numeric(paste(police$OFFICER_YEARS_ON_FORCE)) -->
+<!-- police$INCIDENT_TIME <- as_datetime(paste(police$INCIDENT_TIME)) -->
+<!-- ``` -->
+
+
+## Decriptive data analysis
+### Now lets have look at the overall summary of the dataset.
+```{r eval=FALSE}
+#have a look at the summary of the data
+# print(summary(police))
+library(summarytools)
+view(dfSummary(police))
+
+```
+
+
+### We found that most of the variables are categorical variables. Lets have a look at the levels of some variables
+```{r}
+#Analysing the various levels and frequency of the categorical variable
+
+print(".........................................................................")
+table(OFFICER_GENDER)
+print(".........................................................................")
+table(OFFICER_RACE)
+print(".........................................................................")
+table(SUBJECT_GENDER)
+print("..........................................................................")
+table(SUBJECT_RACE)
+
+```
+
+### From the above table we found that there are some irrelevent levels in the variables I would prefer to eliminate all those for a convinient visualization.
+
+
+## Data Cleaning
+
+```{r message=FALSE,warning=FALSE}
+#Eliminating some levels from the variables)
+police$OFFICER_GENDER <- droplevels(OFFICER_GENDER,exclude = "OffSex")
+police$SUBJECT_GENDER <- droplevels(SUBJECT_GENDER, exclude = c("CitSex","NULL" , "Unknown"))
+police$OFFICER_RACE <- droplevels(OFFICER_RACE, exclude=c("OffRace","Other"))
+police$SUBJECT_RACE <- droplevels(SUBJECT_RACE, exclude=c("CitRace","Other","NULL"))
+```
+
+### This elimination create some na values in the dataset. Lets calculate the sum of na values in this dataset and we can remove the the na values in one go if removing in one go doesnt affect the data that much here in this case we can do that but in some cases it is not recommmended since especially dealing with numerical variables because we may loose our acuracy in prediction.
+
+
+```{r message=FALSE, warning=FALSE}
+sum(is.na(police)) # calculating total na values
+police <- na.omit(police) # removing na values
+```
+### Here we found that there are total 92 na values and I decide to remove that.
+
+
+
+## Data Visualization
+ Data Visualization has a huge impact on human perpective.I remember a quote "A picture is worth a thousand words", we all accept it because when looking at a list of data and extracting information from it is very difficult and time consuming if we are doing that manually, here comes the importance for data visualization. Data visualization bounces us a strong awareness of what the data means by giving it visual framework using maps or graphs. This makes the data more natural for the human mind to realize and therefore makes it informal to recognize trends, patterns, and outliers within huge data sets. Ggplot is the most widely used package for data visualization.
+
+### Lets starts exploring the data using visualization
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 8,fig.height =4}
+#BAR PLOT DISPLAYING INCIDENTS ACROSS DISTRICTS AND DIVISIONS
+a <- ggplot(police,aes(LOCATION_DISTRICT
+,fill=DIVISION
+))+geom_bar()+ggtitle("BAR PLOT DISPLAYING INCIDENTS ACROSS DISTRICTS AND DIVISIONS")
+
+ggplotly(a)
+```
+
+
+### The plot displays the incidents across districts and divisions.This effectively conveys that most of the incidents are reported in D14 and D2 districts and most of them are in cental division.
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 8,fig.height =4}
+#BAR PLOT DISPLAYING INCIDENTS ACROSS STATES AND STREETS
+b <-ggplot(police,aes(LOCATION_STATE
+,fill=STREET_TYPE
+))+geom_bar()+ggtitle("BAR PLOT DISPLAYING INCIDENTS ACROSS STATES AND STREETS")+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+ggplotly()
+
+
+```
+
+### This plot conveys the incidents reported in various location States and Streets
+
+
+###  Lets have a look at the officers in force based on their gender and race, and also the subjects involved in the incidents based on their gender and race.
+```{r message=FALSE,warning=FALSE,echo=FALSE, eval=TRUE}
+
+
+a <-ggplot(police,aes(OFFICER_RACE) )+geom_bar(fill="#cccc00")+facet_grid(~OFFICER_GENDER)+labs(x="Officer Gender", y="Count",title = "Number of Officers in force based on their race and gender")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+  
+
+b <-ggplot(police,aes(SUBJECT_RACE) )+geom_bar(fill="#cccc00")+facet_grid(~SUBJECT_GENDER)+labs(x="Subject Gender", y="Count",title = "Number of subjects based on their race and gender")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+ 
+grid.arrange(a,b)
+```
+
+###  The plot shows that the White male officers are more in force. And male subjects belonging to the Black ethnic group has involved more in the incidents.
+#### 
+
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 10,fig.height =5}
+
+#A HISTOGRAM SHOWING OFFICER EXPERIENCE ON FORCE
+a<-ggplot(police,aes(OFFICER_YEARS_ON_FORCE))+geom_histogram(fill="#ff0066",stat = "count")+xlab("experience in years")+ylab("No.of officers")+labs(title = "Histogram showing officer years of experience in force")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12,face="bold"))
+
+
+ggplotly(a)
+```
+
+###  This plot Shows that more officers in force has an experience of 2 years and the majority of the police officers has less than 10 years of experience.
+
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 8,fig.height =4}
+#BAR PLOT SHOWS TYPES OF FORCE USED BY MALE AND FEMALE OFFICERS
+b <-ggplot(police,aes(OFFICER_GENDER
+,fill=TYPE_OF_FORCE_USED1
+))+geom_bar()+ggtitle("TYPES OF FORCE USED BY MALE AND FEMALE OFFICERS")+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12,face="bold"))
+
+
+
+ggplotly(b)
+
+
+```
+
+### This plot shows that male officers are more likely to use the forces during the incidents.
+And most of the cases they have used verbal command and weapon display in order to comply.
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+b <-ggplot(police,aes(OFFICER_RACE
+,fill=REASON_FOR_FORCE
+))+geom_bar()+ggtitle("REASON FOR FORCE BY OFFICER RACE")+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12,face="bold"))
+
+
+
+ggplotly(b)
+```
+
+### Plot shows that White officers are more likely to use the force and in most of the cases the reason for the force is arrest.
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 20,fig.height =10}
+#BAR PLOT DISPLAYING INCIDENTS ACROSS SECTORS
+b <- ggplot(police,aes(SECTOR))+geom_bar(color="purple",fill="brown")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12))
+#BAR PLOT DISPLAYING INCIDENTS ACROSS STREETS
+c <- ggplot(police,aes(STREET_NUMBER))+geom_bar(color="darkblue")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12,face="bold"))
+#BAR DISPLAYING INCIDENTS ACROSS BEATS
+d <- ggplot(police,aes(BEAT))+geom_bar(color="yellow")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12))
+
+grid.arrange(c,d)
+grid.arrange(b,c,d)
+
+```
+### This plot displays the incidents happened across various beats,streets and sector
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 7,fig.height =7}
+a <-ggplot(police, aes(OFFICER_GENDER))+geom_bar(fill="#CD7F32",width = 0.4)+facet_grid(OFFICER_INJURY~OFFICER_RACE)+labs(title = "Officer injury based on officer gender and race")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+
+
+b <-ggplot(police,aes(SUBJECT_GENDER))+geom_bar(width=0.4,fill="#336600")+facet_grid( ~SUBJECT_INJURY~SUBJECT_RACE)+labs(x="Subject Gender", y="Count",title = "Subject injury based on subject gender and race")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+grid.arrange(a,b)
+
+```
+
+###  This plot shows that White male officers are more likely to get injured duting the incidents whereas the Black males are more likely to get injured during the incidents.
+
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE, fig.width = 8,fig.height =8, eval=FALSE}
+a <-ggplot(police, aes(OFFICER_YEARS_ON_FORCE))+geom_bar(fill="brown",color="black",width = 0.4)+facet_grid(~SUBJECT_WAS_ARRESTED)+labs(title = "Subject arrested based on officer Years of experience")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+
+#
+b <-ggplot(police,aes(SUBJECT_INJURY))+geom_bar(width=0.4,fill="#9999ff", )+facet_grid( ~SUBJECT_WAS_ARRESTED~OFFICER_RACE)+labs(title = "Subject Arrested and injured based on officer race")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+c <-ggplot(police,aes(SUBJECT_INJURY))+geom_bar(width=0.4,fill="#ff6600", color="#ffd6cc")+facet_grid( ~SUBJECT_WAS_ARRESTED~OFFICER_GENDER)+labs(title = "Subject Arrested and injured based on officer gender")+theme(plot.title = element_text(color ="#6495ED", size=15, face="bold"),
+               axis.title.x =element_text(color="#DE3163", size=12, face="bold"),                   axis.title.y =element_text(color="#DE3163", size=12, face="bold"))+theme(axis.text.x = element_text(angle = 20, hjust = 1,color="brown", face="bold"))+theme(axis.text.y = element_text(color="brown", face="bold"))
+
+grid.arrange(a,b,c)
+```
+
+### These plots shows that more subjects are arrested by the officers with less than 10 yeras of experience in force.And white officers have arrested and injured more number of black ethnic group during the incidents.Male officers have arrested and injured the subjects more compared to female officers.
+
+
+# Conclusion
+###  More number of officers has experience of scarcer than 10 years and also they have arrested more subjects without any injury. White Male officers are high in number reasonably wheras the Black male subjects are highly involved in the incident. Around 1200 White Male officers are injured during incidents.The subjects are mostly men a belonging to the black race.Mostly Subjects were arrested without any injury. An arrest is the most happened incident reason.D14 Central has registered the number of incidents. The male officers belonging to the white race who have been injured and got hospitalized is more in number. The black men are more likely to get arrested and injured during the incidences. 
+
+
+# References
+### 1.Google
+### 2.Moodle
+### 3.Github
+### 4.YouTube
+### 5.Kaggle
+### 6.DAtacamp
+
