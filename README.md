@@ -6,3 +6,7 @@ Books : "Alice’s Adventures in Wonderland" and "Great Expectations"
 Exploratory data analysis on Police Equity dataset in kaggle
 ## CourseWork 3 : Exploratory Data Analysis and Machine Learning with R(Group Project)
 Heart desease/stroke prediction
+## CourseWork 4 : Comparative study Machine Learning Classification algorithms
+Customer classification
+## CourseWork 5 : Comparative study Machine Learning Regression algorithms
+Price prediction
