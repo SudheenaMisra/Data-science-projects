@@ -10,3 +10,5 @@ Heart desease/stroke prediction
 Customer classification
 ## CourseWork 5 : Comparative study Machine Learning Regression algorithms
 Price prediction
+## CourseWork 6 : Titanic Survival Analysis
+Predicting the survival rate using the titanic dataset from kaggle
